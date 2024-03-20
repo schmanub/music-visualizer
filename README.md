@@ -1,2 +1,2 @@
 # music-visualizer
-Compile the .py file using your preffered compiler and run the executable.
+Compile the .py file using your preferred compiler and run the executable.
