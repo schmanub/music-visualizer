@@ -1,12 +1,15 @@
 import pygame as pg
 import sys
+import math
 
 # Manuel Marchand, Ethan Dunn
 
 pg.init()
 
 # setup window
-screen = pg.display.set_mode((400, 200))
+SCREEN_WIDTH = 400
+SCREEN_HEIGHT = 200
+screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pg.RESIZABLE)
 pg.display.set_caption("Music Visualizer")
 text_font = pg.font.SysFont("arial", 20)
 clock = pg.time.Clock()
@@ -40,12 +43,22 @@ def draw_text(text, font, color, x, y):
     screen.blit(img, (x, y))
 
 
+def rgb():
+    m = .5
+    x = pg.time.get_ticks() / 500
+    return 255 * (m * (math.cos(x)) + m), 255 * (m * (math.cos(x + (math.pi * (2 / 3)))) + m), 255 * (
+            m * (math.cos(x + (math.pi * (4 / 3)))) + m)
+
+
 def main_menu():
     message_start = 0
     message = False
     while True:
         screen.fill("white")
-        draw_text("Drag an MP3 into this window", text_font, 0, 10, 10)
+        text = text_font.render("Drag an MP3 into this window", True, rgb())
+        text_rect = text.get_rect(center=(screen.get_width() / 2, screen.get_height() / 2))
+        screen.blit(text, text_rect)
+        #draw_text("Drag an MP3 into this window", text_font, rgb(), 10, 10)
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 pg.quit()
