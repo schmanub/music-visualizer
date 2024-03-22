@@ -11,6 +11,29 @@ pg.display.set_caption("Music Visualizer")
 text_font = pg.font.SysFont("arial", 20)
 clock = pg.time.Clock()
 
+bitrate_table = {
+    0b00010000: 32,
+    0b00100000: 40,
+    0b00110000: 48,
+    0b01000000: 56,
+    0b01010000: 64,
+    0b01100000: 80,
+    0b01110000: 96,
+    0b10000000: 112,
+    0b10010000: 128,
+    0b10100000: 160,
+    0b10110000: 192,
+    0b11000000: 224,
+    0b11010000: 256,
+    0b11100000: 320,
+}
+
+sample_rate_table = {
+    0b00: 44100,
+    0b01: 48000,
+    0b10: 32000,
+}
+
 
 def draw_text(text, font, color, x, y):
     img = font.render(text, True, color)
