@@ -104,8 +104,8 @@ def visualizer(file_stream, buffer_size):
         screen.fill((0, 0, 0))
         interval = screen.get_width() / 128
         for i in range(0, rect_count):
-            height = 0.1*screen.get_height()
-            pg.draw.rect(screen, "white", (i * interval, (screen.get_height() - height)/2, interval, height))
+            height = random.random()*screen.get_height()
+            pg.draw.rect(screen, rgb(), (i * interval, (screen.get_height() - height)/2, interval, height))
         # data = file_stream.read(100)
         # print(np.frombuffer(data, int))
         # file_stream.close()
