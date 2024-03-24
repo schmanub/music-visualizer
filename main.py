@@ -1,6 +1,6 @@
 import pygame as pg
 import numpy as np
-import sys, math, struct
+import sys, math, struct, random
 
 # Manuel Marchand, Ethan Dunn
 
@@ -38,13 +38,6 @@ sample_rate_table = {
 }
 
 
-def int_list_to_hex(input_list):
-    output_list = list()
-    for item in input_list:
-        output_list.append(hex(item))
-    return output_list
-
-
 def draw_text(text, font, color, x, y):
     img = font.render(text, True, color)
     screen.blit(img, (x, y))
@@ -77,29 +70,47 @@ def main_menu():
                     message = True
                     message_start = pg.time.get_ticks()
                 else:
-                    wav_visualizer(event.file)
+                    wav_header(event.file)
         clock.tick()
         if message:
+            # draw error on screen for 1000 ticks
             draw_text("Error", text_font, "red", 10, 40)
             if pg.time.get_ticks() > message_start + 1000:
                 message = False
         pg.display.update()
 
 
-def wav_visualizer(input_file):
+def wav_header(input_file):
     # open the file in read only "r" binary mode "b"
     file_stream = open(input_file, "rb")
-    header_meaning = ["RIFF", "ChunkSize", "WAVE", "fmt ", "Subchunk1size", "audioformat", "channelnum", "samplerate",
-                      "byterate", "blockalign", "bits per sample"]
+    header_meaning = ["RIFF", "ChunkSize", "WAVE", "fmt ", "Sub chunk1size", "audio format", "channel count",
+                      "samplerate",
+                      "byte rate", "block align", "bits per sample"]
     header_data = struct.unpack("<IIIIIHHIIHH", file_stream.read(36))
     # check if the file is a 16 bit pcm wave file
     if header_data[0] == 1179011410 and header_data[2] == 1163280727 and header_data[10] == 16:
         for i in range(0, len(header_data)):
             print(header_meaning[i], header_data[i])
-        data = file_stream.read()
+        visualizer(file_stream, header_data[9])
     else:
-        print("Unsupported wave file")
-    file_stream.close()
+        print("Unsupported wav file, only 16 bit wav files are supported")
+        file_stream.close()
+
+
+def visualizer(file_stream, buffer_size):
+    rect_count = 128
+    while True:
+        pg.event.pump()
+        screen.fill((0, 0, 0))
+        interval = screen.get_width() / 128
+        for i in range(0, rect_count):
+            height = 0.1*screen.get_height()
+            pg.draw.rect(screen, "white", (i * interval, (screen.get_height() - height)/2, interval, height))
+        # data = file_stream.read(100)
+        # print(np.frombuffer(data, int))
+        # file_stream.close()
+        clock.tick(60)
+        pg.display.update()
 
 
 main_menu()
