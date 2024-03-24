@@ -1,6 +1,6 @@
 import pygame as pg
-import sys
-import math
+import numpy as np
+import sys, math, struct
 
 # Manuel Marchand, Ethan Dunn
 
@@ -38,6 +38,13 @@ sample_rate_table = {
 }
 
 
+def int_list_to_hex(input_list):
+    output_list = list()
+    for item in input_list:
+        output_list.append(hex(item))
+    return output_list
+
+
 def draw_text(text, font, color, x, y):
     img = font.render(text, True, color)
     screen.blit(img, (x, y))
@@ -46,37 +53,53 @@ def draw_text(text, font, color, x, y):
 def rgb():
     m = .5
     x = pg.time.get_ticks() / 500
-    return 255 * (m * (math.cos(x)) + m), 255 * (m * (math.cos(x + (math.pi * (2 / 3)))) + m), 255 * (
-            m * (math.cos(x + (math.pi * (4 / 3)))) + m)
+    return int(255 * (m * (math.cos(x)) + m)), int(255 * (m * (math.cos(x + (math.pi * (2 / 3)))) + m)), int(255 * (
+            m * (math.cos(x + (math.pi * (4 / 3)))) + m))
 
 
 def main_menu():
     message_start = 0
     message = False
     while True:
+        # handle text
         screen.fill("white")
-        text = text_font.render("Drag an MP3 into this window", True, rgb())
+        text = text_font.render("Drag a .wav into this window", True, rgb())
         text_rect = text.get_rect(center=(screen.get_width() / 2, screen.get_height() / 2))
         screen.blit(text, text_rect)
-        #draw_text("Drag an MP3 into this window", text_font, rgb(), 10, 10)
+
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 pg.quit()
                 sys.exit()
             elif event.type == pg.DROPFILE:
                 print("File path: ", event.file)
-                if not event.file.endswith(".mp3"):
+                if not event.file.endswith(".wav"):
                     message = True
                     message_start = pg.time.get_ticks()
                 else:
-                    file_stream = open(event.file, "rb")
-                    print(file_stream.read(100))
-        clock.tick(60)
+                    wav_visualizer(event.file)
+        clock.tick()
         if message:
-            draw_text("Thats not an MP3!", text_font, "red", 10, 40)
+            draw_text("Error", text_font, "red", 10, 40)
             if pg.time.get_ticks() > message_start + 1000:
                 message = False
         pg.display.update()
+
+
+def wav_visualizer(input_file):
+    # open the file in read only "r" binary mode "b"
+    file_stream = open(input_file, "rb")
+    header_meaning = ["RIFF", "ChunkSize", "WAVE", "fmt ", "Subchunk1size", "audioformat", "channelnum", "samplerate",
+                      "byterate", "blockalign", "bits per sample"]
+    header_data = struct.unpack("<IIIIIHHIIHH", file_stream.read(36))
+    # check if the file is a 16 bit pcm wave file
+    if header_data[0] == 1179011410 and header_data[2] == 1163280727 and header_data[10] == 16:
+        for i in range(0, len(header_data)):
+            print(header_meaning[i], header_data[i])
+        data = file_stream.read()
+    else:
+        print("Unsupported wave file")
+    file_stream.close()
 
 
 main_menu()
