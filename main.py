@@ -10,8 +10,6 @@ from pygame import mixer
 
 pg.init()
 mixer.init()
-mixer.music.set_volume(0.2)
-
 
 # setup window
 SCREEN_WIDTH = 1500
@@ -21,6 +19,7 @@ pg.display.set_caption("Music Visualizer")
 text_font = pg.font.SysFont("arial", 20)
 clock = pg.time.Clock()
 frame_rate = 60
+mixer.music.set_volume(0.3)
 
 
 def map_range(range1: tuple, range2: tuple, value):
@@ -49,15 +48,26 @@ def rgb():
 def wave_form(spect_data):
     rect_count = len(spect_data)
     interval = screen.get_width() / rect_count
-    bin_width = 65536 / rect_count
     # rectangle drawing part
     for i in range(0, rect_count):
         value = map_range((-32768, 32768), (0, 1), spect_data[i])
         height = value * screen.get_height()
-        pg.draw.rect(screen, rgb(), (i * interval, (screen.get_height() - height) / 2, interval, height))
+        rect = (i * interval, (screen.get_height() - height) / 2, interval, height)
+        pg.draw.rect(screen, rgb(), rect)
+
+def wave_form2(spect_data):
+    rect_count = len(spect_data)
+    interval = screen.get_width() / rect_count
+    # rectangle drawing part
+    for i in range(0, rect_count):
+        value = map_range((-32768, 32768), (0, 1), spect_data[i])
+        height = value * screen.get_height()
+        rect = (i * interval, height, interval, 10)
+        pg.draw.rect(screen, rgb(), rect)
 
 
-def frequency_analyzer(spect_data, rect_count):
+def frequency_analyzer(spect_data, rect_count): \
+        # bin_width = 65536 / rect_count
     pass
 
 
@@ -67,14 +77,16 @@ def main_menu():
     while True:
         # handle text
         screen.fill("white")
+        # centered rectangle with text inside, ensures text is always centered
         text = text_font.render("Drag a .wav into this window", True, rgb())
         text_rect = text.get_rect(center=(screen.get_width() / 2, screen.get_height() / 2))
         screen.blit(text, text_rect)
-
+        # check for events
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 pg.quit()
                 sys.exit()
+            # a file has been dragged into the window
             elif event.type == pg.DROPFILE:
                 print("File path: ", event.file)
                 if not event.file.endswith(".wav"):
@@ -112,22 +124,29 @@ def wav_header(input_file):
 
 
 def visualizer(file_stream, block_size):
+    volume = 0.3
     mixer.music.play()
     rect_count = 128
     while True:
-        try:
-            data = file_stream.read(block_size)
-        except:
-            end(file_stream)
+        mixer.music.set_volume(volume)
+        data = file_stream.read(block_size)
         decoded_data = np.frombuffer(data, dtype=np.int16)
         # stereo = np.split(decoded_data, 2)
         screen.fill((0, 0, 0))
-        wave_form(decoded_data)
+        if len(decoded_data) == 0:
+            file_stream.close()
+            main_menu()
+        wave_form2(decoded_data)
         clock.tick(frame_rate)
         pg.display.update()
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 end(file_stream)
+            elif event.type == pg.KEYDOWN:
+                if event.key == pg.K_DOWN:
+                    volume -= 0.1
+                elif event.key == pg.K_UP:
+                    volume += 0.1
 
 
 main_menu()
