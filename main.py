@@ -14,7 +14,7 @@ mixer.music.set_volume(0.2)
 
 
 # setup window
-SCREEN_WIDTH = 700
+SCREEN_WIDTH = 1500
 SCREEN_HEIGHT = 300
 screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pg.RESIZABLE)
 pg.display.set_caption("Music Visualizer")
@@ -23,9 +23,9 @@ clock = pg.time.Clock()
 frame_rate = 60
 
 
-def map_range(range1: tuple, range2: tuple, val):
+def map_range(range1: tuple, range2: tuple, value):
     slope = (range2[1] - range2[0]) / (range1[1] - range1[0])
-    return range2[0] + slope * (val - range1[0])
+    return range2[0] + slope * (value - range1[0])
 
 
 def draw_text(text, font, color, x, y):
@@ -46,18 +46,19 @@ def rgb():
             m * (math.cos(x + (math.pi * (4 / 3)))) + m))
 
 
-def spectrum_analysis(spect_data, rect_count):
-    length = len(spect_data)
-    #for i in range(0, length):
-
+def wave_form(spect_data):
+    rect_count = len(spect_data)
     interval = screen.get_width() / rect_count
     bin_width = 65536 / rect_count
-    #print(bin_width)
+    # rectangle drawing part
     for i in range(0, rect_count):
         value = map_range((-32768, 32768), (0, 1), spect_data[i])
-        print(value)
         height = value * screen.get_height()
         pg.draw.rect(screen, rgb(), (i * interval, (screen.get_height() - height) / 2, interval, height))
+
+
+def frequency_analyzer(spect_data, rect_count):
+    pass
 
 
 def main_menu():
@@ -102,10 +103,6 @@ def wav_header(input_file):
         for i in range(0, len(header_data)):
             print(header_meaning[i], header_data[i])
         byte_rate = header_data[8]
-        sample_rate = header_data[7]
-        # bytes per sample = byte rate / sample rate
-        # bytespsample = int(byte_rate/sample_rate)
-        # block_size2 = int(bytespsample * (sample_rate/60))
         block_size = int(byte_rate / frame_rate)
         visualizer(file_stream, block_size)
     else:
@@ -125,7 +122,7 @@ def visualizer(file_stream, block_size):
         decoded_data = np.frombuffer(data, dtype=np.int16)
         # stereo = np.split(decoded_data, 2)
         screen.fill((0, 0, 0))
-        spectrum_analysis(decoded_data, rect_count)
+        wave_form(decoded_data)
         clock.tick(frame_rate)
         pg.display.update()
         for event in pg.event.get():
