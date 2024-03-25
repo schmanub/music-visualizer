@@ -1,41 +1,31 @@
-import pygame as pg
+import math
+import struct
+import sys
+
 import numpy as np
-import sys, math, struct, random
+import pygame as pg
+from pygame import mixer
 
 # Manuel Marchand, Ethan Dunn
 
 pg.init()
+mixer.init()
+mixer.music.set_volume(0.2)
+
 
 # setup window
-SCREEN_WIDTH = 400
-SCREEN_HEIGHT = 200
+SCREEN_WIDTH = 700
+SCREEN_HEIGHT = 300
 screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pg.RESIZABLE)
 pg.display.set_caption("Music Visualizer")
 text_font = pg.font.SysFont("arial", 20)
 clock = pg.time.Clock()
+frame_rate = 60
 
-bitrate_table = {
-    0b00010000: 32,
-    0b00100000: 40,
-    0b00110000: 48,
-    0b01000000: 56,
-    0b01010000: 64,
-    0b01100000: 80,
-    0b01110000: 96,
-    0b10000000: 112,
-    0b10010000: 128,
-    0b10100000: 160,
-    0b10110000: 192,
-    0b11000000: 224,
-    0b11010000: 256,
-    0b11100000: 320,
-}
 
-sample_rate_table = {
-    0b00: 44100,
-    0b01: 48000,
-    0b10: 32000,
-}
+def map_range(range1: tuple, range2: tuple, val):
+    slope = (range2[1] - range2[0]) / (range1[1] - range1[0])
+    return range2[0] + slope * (val - range1[0])
 
 
 def draw_text(text, font, color, x, y):
@@ -43,11 +33,31 @@ def draw_text(text, font, color, x, y):
     screen.blit(img, (x, y))
 
 
+def end(file_stream):
+    file_stream.close()
+    pg.quit()
+    sys.exit()
+
+
 def rgb():
     m = .5
     x = pg.time.get_ticks() / 500
     return int(255 * (m * (math.cos(x)) + m)), int(255 * (m * (math.cos(x + (math.pi * (2 / 3)))) + m)), int(255 * (
             m * (math.cos(x + (math.pi * (4 / 3)))) + m))
+
+
+def spectrum_analysis(spect_data, rect_count):
+    length = len(spect_data)
+    #for i in range(0, length):
+
+    interval = screen.get_width() / rect_count
+    bin_width = 65536 / rect_count
+    #print(bin_width)
+    for i in range(0, rect_count):
+        value = map_range((-32768, 32768), (0, 1), spect_data[i])
+        print(value)
+        height = value * screen.get_height()
+        pg.draw.rect(screen, rgb(), (i * interval, (screen.get_height() - height) / 2, interval, height))
 
 
 def main_menu():
@@ -70,6 +80,7 @@ def main_menu():
                     message = True
                     message_start = pg.time.get_ticks()
                 else:
+                    mixer.music.load(event.file)
                     wav_header(event.file)
         clock.tick()
         if message:
@@ -84,33 +95,42 @@ def wav_header(input_file):
     # open the file in read only "r" binary mode "b"
     file_stream = open(input_file, "rb")
     header_meaning = ["RIFF", "ChunkSize", "WAVE", "fmt ", "Sub chunk1size", "audio format", "channel count",
-                      "samplerate",
-                      "byte rate", "block align", "bits per sample"]
-    header_data = struct.unpack("<IIIIIHHIIHH", file_stream.read(36))
+                      "samplerate", "byte rate", "block align", "bits per sample", "data", "sub chunk 2 size"]
+    header_data = struct.unpack("<IIIIIHHIIHHII", file_stream.read(44))
     # check if the file is a 16 bit pcm wave file
     if header_data[0] == 1179011410 and header_data[2] == 1163280727 and header_data[10] == 16:
         for i in range(0, len(header_data)):
             print(header_meaning[i], header_data[i])
-        visualizer(file_stream, header_data[9])
+        byte_rate = header_data[8]
+        sample_rate = header_data[7]
+        # bytes per sample = byte rate / sample rate
+        # bytespsample = int(byte_rate/sample_rate)
+        # block_size2 = int(bytespsample * (sample_rate/60))
+        block_size = int(byte_rate / frame_rate)
+        visualizer(file_stream, block_size)
     else:
         print("Unsupported wav file, only 16 bit wav files are supported")
         file_stream.close()
+        main_menu()
 
 
-def visualizer(file_stream, buffer_size):
+def visualizer(file_stream, block_size):
+    mixer.music.play()
     rect_count = 128
     while True:
-        pg.event.pump()
+        try:
+            data = file_stream.read(block_size)
+        except:
+            end(file_stream)
+        decoded_data = np.frombuffer(data, dtype=np.int16)
+        # stereo = np.split(decoded_data, 2)
         screen.fill((0, 0, 0))
-        interval = screen.get_width() / 128
-        for i in range(0, rect_count):
-            height = random.random()*screen.get_height()
-            pg.draw.rect(screen, rgb(), (i * interval, (screen.get_height() - height)/2, interval, height))
-        # data = file_stream.read(100)
-        # print(np.frombuffer(data, int))
-        # file_stream.close()
-        clock.tick(60)
+        spectrum_analysis(decoded_data, rect_count)
+        clock.tick(frame_rate)
         pg.display.update()
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                end(file_stream)
 
 
 main_menu()
