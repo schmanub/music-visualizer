@@ -124,7 +124,6 @@ def visualizer(file_stream, block_size):
         clock.tick(frame_rate)
         pg.display.update()
         for event in pg.event.get():
-            print(event)
             if event.type == pg.QUIT:
                 end(file_stream)
             if event.type == pg.KEYDOWN:
