@@ -124,19 +124,23 @@ def wav_header(input_file):
 
 
 def visualizer(file_stream, block_size):
-    volume = 0.3
-    mixer.music.play()
+    graphic_screen = 0
+    vol = 0.3
     rect_count = 128
+    mixer.music.play()
     while True:
-        mixer.music.set_volume(volume)
+        mixer.music.set_volume(vol)
         data = file_stream.read(block_size)
         decoded_data = np.frombuffer(data, dtype=np.int16)
-        # stereo = np.split(decoded_data, 2)
         screen.fill((0, 0, 0))
         if len(decoded_data) == 0:
             file_stream.close()
             main_menu()
-        wave_form2(decoded_data)
+        match graphic_screen:
+            case 0:
+                wave_form(decoded_data)
+            case 1:
+                wave_form2(decoded_data)
         clock.tick(frame_rate)
         pg.display.update()
         for event in pg.event.get():
@@ -144,9 +148,16 @@ def visualizer(file_stream, block_size):
                 end(file_stream)
             elif event.type == pg.KEYDOWN:
                 if event.key == pg.K_DOWN:
-                    volume -= 0.1
+                    vol -= 0.1
                 elif event.key == pg.K_UP:
-                    volume += 0.1
-
+                    vol += 0.1
+                elif event.key == pg.K_LEFT:
+                    print("left")
+                    if graphic_screen > 0:
+                        graphic_screen -= 1
+                elif event.key == pg.K_RIGHT:
+                    print("right")
+                    if graphic_screen < 1:
+                        graphic_screen += 1
 
 main_menu()
