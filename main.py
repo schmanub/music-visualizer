@@ -6,7 +6,11 @@ import numpy as np
 import pygame as pg
 from pygame import mixer
 
+# graphics.py file
+import graphics
+
 # Manuel Marchand, Ethan Dunn
+
 
 pg.init()
 mixer.init()
@@ -16,15 +20,10 @@ SCREEN_WIDTH = 1500
 SCREEN_HEIGHT = 300
 screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pg.RESIZABLE)
 pg.display.set_caption("Music Visualizer")
-text_font = pg.font.SysFont("arial", 20)
+text_font = pg.font.SysFont("arial", 16)
 clock = pg.time.Clock()
 frame_rate = 60
 mixer.music.set_volume(0.3)
-
-
-def map_range(range1: tuple, range2: tuple, value):
-    slope = (range2[1] - range2[0]) / (range1[1] - range1[0])
-    return range2[0] + slope * (value - range1[0])
 
 
 def draw_text(text, font, color, x, y):
@@ -37,38 +36,12 @@ def end(file_stream):
     pg.quit()
     sys.exit()
 
-
-def rgb():
-    m = .5
-    x = pg.time.get_ticks() / 500
-    return int(255 * (m * (math.cos(x)) + m)), int(255 * (m * (math.cos(x + (math.pi * (2 / 3)))) + m)), int(255 * (
-            m * (math.cos(x + (math.pi * (4 / 3)))) + m))
-
-
-def wave_form(spect_data):
-    rect_count = len(spect_data)
-    interval = screen.get_width() / rect_count
-    # rectangle drawing part
-    for i in range(0, rect_count):
-        value = map_range((-32768, 32768), (0, 1), spect_data[i])
-        height = value * screen.get_height()
-        rect = (i * interval, (screen.get_height() - height) / 2, interval, height)
-        pg.draw.rect(screen, rgb(), rect)
-
-def wave_form2(spect_data):
-    rect_count = len(spect_data)
-    interval = screen.get_width() / rect_count
-    # rectangle drawing part
-    for i in range(0, rect_count):
-        value = map_range((-32768, 32768), (0, 1), spect_data[i])
-        height = value * screen.get_height()
-        rect = (i * interval, height, interval, 10)
-        pg.draw.rect(screen, rgb(), rect)
-
-
-def frequency_analyzer(spect_data, rect_count): \
-        # bin_width = 65536 / rect_count
-    pass
+def rgb(time):
+    # 3 cos waves all 120 degrees out of phase with each other
+    x = time / 500
+    return (int(255 * (0.5 * (math.cos(x)) + 0.5)),
+            int(255 * (0.5 * (math.cos(x + (math.pi * (2 / 3)))) + 0.5)),
+            int(255 * (0.5 * (math.cos(x + (math.pi * (4 / 3)))) + 0.5)))
 
 
 def main_menu():
@@ -78,7 +51,7 @@ def main_menu():
         # handle text
         screen.fill("white")
         # centered rectangle with text inside, ensures text is always centered
-        text = text_font.render("Drag a .wav into this window", True, rgb())
+        text = text_font.render("Drag a .wav into this window", True, rgb(pg.time.get_ticks()))
         text_rect = text.get_rect(center=(screen.get_width() / 2, screen.get_height() / 2))
         screen.blit(text, text_rect)
         # check for events
@@ -124,29 +97,48 @@ def wav_header(input_file):
 
 
 def visualizer(file_stream, block_size):
-    volume = 0.3
-    mixer.music.play()
+    graphic_screen = 0
+    vol = 0.3
     rect_count = 128
+    mixer.music.play()
     while True:
-        mixer.music.set_volume(volume)
+        mixer.music.set_volume(vol)
         data = file_stream.read(block_size)
+
+        index = str(data).find("data")
+        if index != -1:
+            print("YES IT DOES")
+
         decoded_data = np.frombuffer(data, dtype=np.int16)
-        # stereo = np.split(decoded_data, 2)
         screen.fill((0, 0, 0))
+        draw_text(str(clock.get_fps()), text_font, "white", 10, 10)
         if len(decoded_data) == 0:
             file_stream.close()
             main_menu()
-        wave_form2(decoded_data)
+        wave_form = graphics.Waveform(screen, decoded_data, rgb(pg.time.get_ticks()))
+        match graphic_screen:
+            case 0:
+                wave_form.big()
+            case 1:
+                wave_form.tiny()
         clock.tick(frame_rate)
         pg.display.update()
         for event in pg.event.get():
+            print(event)
             if event.type == pg.QUIT:
                 end(file_stream)
-            elif event.type == pg.KEYDOWN:
+            if event.type == pg.KEYDOWN:
                 if event.key == pg.K_DOWN:
-                    volume -= 0.1
-                elif event.key == pg.K_UP:
-                    volume += 0.1
+                    vol -= 0.1
+                if event.key == pg.K_UP:
+                    vol += 0.1
+                if event.key == pg.K_SPACE:
+                    if graphic_screen == 0:
+                        graphic_screen = 1
+                    else:
+                        graphic_screen = 0
+            if event.type == pg.VIDEOEXPOSE:
+                print("MOVING WINDOW WILL CAUSE DESYNC")
 
 
 main_menu()
