@@ -1,10 +1,12 @@
 import math
 import struct
 import sys
+import io
 
 import numpy as np
 import pygame as pg
 from pygame import mixer
+from pydub import AudioSegment
 
 # graphics.py file
 import graphics
@@ -31,6 +33,7 @@ text_font = pg.font.SysFont("arial", 16)
 clock = pg.time.Clock()
 frame_rate = 60
 mixer.music.set_volume(0.3)
+type = None
 
 
 def draw_text(text, font, color, x, y):
@@ -52,6 +55,38 @@ def rgb(time):
             int(255 * (0.5 * (math.cos(x + (math.pi * (4 / 3)))) + 0.5)))
 
 
+def pcm_to_sound(file_stream):
+    before = file_stream.tell()
+    temp_data = np.frombuffer(file_stream.read(), dtype=np.int16)
+    file_stream.seek(before)
+    return pg.mixer.Sound(temp_data)
+
+
+def pause(file_stream):
+    while True:
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                end(file_stream)
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_SPACE:
+                    music = pcm_to_sound(file_stream)
+                    return music
+
+
+def miliseek(time, block_size):
+    fpmili = frame_rate / 1000
+    pos = int((pg.time.get_ticks() - time) * fpmili * block_size)
+    remainder = pos % 4
+    if remainder != 0:
+        if remainder <= 2:
+            pos = pos - remainder
+        else:
+            pos = pos + (4 - remainder)
+    if pos < 0:
+        pos = 0
+    return pos
+
+
 def main_menu():
     message_start = 0
     message = False
@@ -59,7 +94,7 @@ def main_menu():
         # handle text
         screen.fill("white")
         # centered rectangle with text inside, ensures text is always centered
-        text = text_font.render("Drag a .wav into this window", True, rgb(pg.time.get_ticks()))
+        text = text_font.render("Drag a .wav or .mp3 into this window", True, rgb(pg.time.get_ticks()))
         text_rect = text.get_rect(center=(screen.get_width() / 2, screen.get_height() / 2))
         screen.blit(text, text_rect)
         # check for events
@@ -71,8 +106,9 @@ def main_menu():
             elif event.type == pg.DROPFILE:
                 print("File path: ", event.file)
                 if event.file.endswith(".wav"):
-                    mixer.music.load(event.file)
                     wav_header(event.file)
+                elif event.file.endswith(".mp3"):
+                    mp3_decoder(event.file)
                 else:
                     message = True
                     message_start = pg.time.get_ticks()
@@ -98,6 +134,7 @@ def wav_header(input_file):
             print(header_meaning[i], header_data[i])
         byte_rate = header_data[8]
         block_size = int(byte_rate / frame_rate)
+        print(block_size)
         visualizer(file_stream, block_size)
     else:
         print("Unsupported wav file, only 16 bit wav files are supported")
@@ -105,16 +142,33 @@ def wav_header(input_file):
         main_menu()
 
 
+def mp3_decoder(input_file):
+    audio = AudioSegment.from_mp3(input_file)
+    pcm_data = audio.raw_data
+    pcm_file = io.BytesIO()
+    pcm_file.write(pcm_data)
+    pcm_file.seek(0)
+    byte_rate = audio.frame_rate * audio.channels * 2
+    block_size = int(byte_rate / frame_rate)
+    visualizer(pcm_file, block_size)
+
+
 def visualizer(file_stream, block_size):
+    file_stream.seek(0, 2)
+    length = file_stream.tell()
+    file_stream.seek(0)
+    inc = 10000
     graphic_screen = 0
     vol = 0.3
-    mixer.music.play()
+    music = pcm_to_sound(file_stream)
+    time = pg.time.get_ticks()
+    music.play()
     while True:
         mixer.music.set_volume(vol)
         data = file_stream.read(block_size)
         decoded_data = np.frombuffer(data, dtype=np.int16)
         screen.fill((0, 0, 0))
-        draw_text(str(clock.get_fps()), text_font, "white", 10, 10)
+        draw_text(str(round(file_stream.tell() / length * 100)) + "%", text_font, "white", 10, 10)
         if len(decoded_data) == 0:
             file_stream.close()
             main_menu()
@@ -134,13 +188,29 @@ def visualizer(file_stream, block_size):
                     vol -= 0.1
                 if event.key == pg.K_UP:
                     vol += 0.1
-                if event.key == pg.K_SPACE:
+                if event.key == pg.K_m:
                     if graphic_screen == 0:
                         graphic_screen = 1
                     else:
                         graphic_screen = 0
+                if event.key == pg.K_SPACE:
+                    music.stop()
+                    music = pause(file_stream)
+                    music.play()
+                if event.key == pg.K_LEFT and time - inc > 0:
+                    time -= inc
+                if event.key == pg.K_RIGHT:
+                    time += inc
+                if event.key == pg.K_RIGHT or event.key == pg.K_LEFT and time - inc > 0:
+                    pos = miliseek(pg.time.get_ticks() - time, block_size)
+                    file_stream.seek(pos)
+                    music.stop()
+                    music = pcm_to_sound(file_stream)
+                    music.play()
+
             if event.type == pg.VIDEOEXPOSE:
-                print("MOVING WINDOW WILL CAUSE DESYNC")
+                pos = miliseek(pg.time.get_ticks() - time, block_size)
+                file_stream.seek(pos)
 
 
 main_menu()
