@@ -156,6 +156,9 @@ def visualizer(file_stream, block_size):
     while True:
         print(time)
         data = file_stream.read(block_size)
+        if len(data) < block_size:
+            file_stream.close()
+            main_menu()
         decoded_data = np.frombuffer(data, dtype=np.int16)
         screen.fill((0, 0, 0))
         draw_text(str(round(file_stream.tell() / length * 100)) + "%", text_font, "white", 10, 10)
