@@ -1,2 +1,3 @@
 # music-visualizer
-Compile the .py file using your preferred compiler and run the executable.
+Compile the main.py file using your preferred compiler and run the executable.
+Necessary packages: pygame, numpy, pydub
