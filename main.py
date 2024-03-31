@@ -5,7 +5,6 @@ import io
 
 import numpy as np
 import pygame as pg
-from pygame import mixer
 from pydub import AudioSegment
 
 # graphics.py file
@@ -13,16 +12,7 @@ import graphics
 
 # Manuel Marchand, Ethan Dunn
 
-
 pg.init()
-
-# ensure a sound device is connected
-while True:
-    try:
-        mixer.init()
-        break
-    except:
-        print("NO SOUND DEVICE FOUND")
 
 # setup window
 SCREEN_WIDTH = 1500
@@ -32,7 +22,7 @@ pg.display.set_caption("Music Visualizer")
 text_font = pg.font.SysFont("arial", 16)
 clock = pg.time.Clock()
 frame_rate = 60
-mixer.music.set_volume(0.3)
+#mixer.music.set_volume(0.3)
 type = None
 
 
@@ -164,7 +154,7 @@ def visualizer(file_stream, block_size):
     time = pg.time.get_ticks()
     music.play()
     while True:
-        mixer.music.set_volume(vol)
+        print(time)
         data = file_stream.read(block_size)
         decoded_data = np.frombuffer(data, dtype=np.int16)
         screen.fill((0, 0, 0))
@@ -185,9 +175,9 @@ def visualizer(file_stream, block_size):
                 end(file_stream)
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_DOWN:
-                    vol -= 0.1
+                    vol -= 0.05
                 if event.key == pg.K_UP:
-                    vol += 0.1
+                    vol += 0.05
                 if event.key == pg.K_m:
                     if graphic_screen == 0:
                         graphic_screen = 1
@@ -211,6 +201,7 @@ def visualizer(file_stream, block_size):
             if event.type == pg.VIDEOEXPOSE:
                 pos = miliseek(pg.time.get_ticks() - time, block_size)
                 file_stream.seek(pos)
+        music.set_volume(vol)
 
 
 main_menu()
