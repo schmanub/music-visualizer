@@ -6,8 +6,9 @@ Press space bar to pause, left and right arrow keys will skip 10 seconds forward
 
 ## Installing
 Install python 3 from the official website.
+Also install ffmpeg from their official website.
 
-Run the following in the terminal to install the Pygame library, and follow the steps to install ffmpeg from the website.
+Run the following in the terminal to install all necessary libraries:
 ```
 pip3 install pygame
 pip3 install numpy
@@ -16,7 +17,7 @@ pip3 install pydub
 ## Running the application
 Clone the repo and run the main.py file.
 ```
-python3 music-visualizer\ main.py 
+python3 main.py 
 ```
 
 ## Screenshots
@@ -39,5 +40,5 @@ python3 music-visualizer\ main.py
 
 ## Authors
 
-* **Manuel Marchand** - *Game Logic*
+* **Manuel Marchand** - *File processing and menu system*
 * **Ethan Dunn** - *Graphics*
