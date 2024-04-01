@@ -22,8 +22,6 @@ pg.display.set_caption("Music Visualizer")
 text_font = pg.font.SysFont("arial", 16)
 clock = pg.time.Clock()
 frame_rate = 60
-#mixer.music.set_volume(0.3)
-type = None
 
 
 def draw_text(text, font, color, x, y):
@@ -152,6 +150,7 @@ def visualizer(file_stream, block_size):
     vol = 0.3
     music = pcm_to_sound(file_stream)
     time = pg.time.get_ticks()
+    skip_offset = 0
     music.play()
     while True:
         print(time)
