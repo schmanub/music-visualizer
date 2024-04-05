@@ -33,6 +33,6 @@ class Waveform:
         data = abs(fft(self.spect_data, self.rect_count, -1, "ortho"))
         normalized_data = data / np.linalg.norm(data)
         for i in range(0, self.rect_count):
-            height = normalized_data[i] * (self.screen.get_height() * 2)
+            height = normalized_data[i] * (self.screen.get_height()*8)
             rect = (i * (interval + space), self.screen.get_height() - height, interval2, height)
             pg.draw.rect(self.screen, self.color, rect)

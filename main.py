@@ -50,8 +50,7 @@ def pcm_to_sound(file_stream):
     return pg.mixer.Sound(temp_data)
 
 
-def pause(file_stream, time):
-    i_time = pg.time.get_ticks()
+def pause(file_stream):
     draw_text("Pause", text_font, "white", screen.get_width() - 60, 10)
     pg.display.update()
     while True:
@@ -62,9 +61,8 @@ def pause(file_stream, time):
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_SPACE:
                     music = pcm_to_sound(file_stream)
-                    time += pg.time.get_ticks() - i_time
                     screen.fill((0, 0, 0))
-                    return music, time
+                    return music
 
 
 def miliseek(time, block_size):
@@ -185,13 +183,13 @@ def visualizer(file_stream, block_size):
             if event.type == pg.QUIT:
                 end(file_stream)
             if event.type == pg.KEYDOWN:
-                if event.key == pg.K_DOWN:
+                if event.key == pg.K_DOWN and vol > 0:
                     vol -= 0.05
-                    stat_message = "-Vol: " + str(round(vol, 2))
+                    stat_message = "-Vol: " + str(round(vol*100)) + "%"
                     stat_time = pg.time.get_ticks() + 1000
-                if event.key == pg.K_UP:
+                if event.key == pg.K_UP and vol < 1:
                     vol += 0.05
-                    stat_message = "+Vol: " + str(round(vol, 2))
+                    stat_message = "+Vol: " + str(round(vol*100)) + "%"
                     stat_time = pg.time.get_ticks() + 1000
                 if event.key == pg.K_m:
                     if graphic_screen == 0:
@@ -200,7 +198,7 @@ def visualizer(file_stream, block_size):
                         graphic_screen = 0
                 if event.key == pg.K_SPACE:
                     music.stop()
-                    music, time = pause(file_stream, time)
+                    music = pause(file_stream)
                     music.play()
                 if event.key == pg.K_LEFT and time - inc > 0:
                     time -= inc
