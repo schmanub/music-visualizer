@@ -40,5 +40,5 @@ python3 main.py
 
 ## Authors
 
-* **Manuel Marchand** - *File processing and menu system*
-* **Ethan Dunn** - *Graphics*
+* **Manuel Marchand** - *All user IO and audio processing/handling*
+* **Ethan Dunn** - *Graphics related code and menu functionalities*
